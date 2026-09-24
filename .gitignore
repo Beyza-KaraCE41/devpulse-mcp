@@ -1,0 +1,17 @@
+
+# Python sanal ortamı: herkes kendi bilgisayarında kurar
+.venv/
+
+# Python'un otomatik ürettiği önbellek dosyaları
+__pycache__/
+*.pyc
+
+# Veritabanı dosyaları: toplayıcı tekrar üretebilir
+*.db
+
+# Gizli bilgiler (Github token vb.): ASLA Github'a gitmez
+.env
+
+# Editör ve işletim sistemi dosyaları
+.vscode/
+Thumbs.db
