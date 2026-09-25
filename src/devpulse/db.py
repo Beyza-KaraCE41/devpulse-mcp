@@ -4,6 +4,7 @@ import json
 import sqlite3
 
 from devpulse.config import veritabani_yolu
+from devpulse.kategoriler import kategorile
 
 SEMA = """
 CREATE TABLE IF NOT EXISTS repolar(
@@ -69,6 +70,12 @@ def fotograf_kaydet(baglanti: sqlite3.Connection, repolar: list[dict], tarih: st
                     repo["url"],
                     tarih,
                 ),
+            )
+            # YENİ: Kategorileri her gün baştan hesapla (etiketler değişmiş olabilir)
+            baglanti.execute("DELETE FROM kategoriler WHERE repo_ad = ?", (repo["ad"],))
+            baglanti.executemany(
+                "INSERT INTO kategoriler (repo_ad, kategori) VALUES (?, ?)",
+                [(repo["ad"], k) for k in kategorile(repo["konular"], repo["aciklama"])],
             )
             baglanti.execute(
                 """
