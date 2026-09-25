@@ -103,6 +103,14 @@ KATEGORILER: dict[str, set[str]] = {
         "code-generation",
         "coding-assistant",
     },
+    "Oyun": {
+        "game",
+        "gamedev",
+        "game-engine",
+        "godot",
+        "unity",
+        "pygame",
+    },
 }
 
 DIGER = "Diğer"
