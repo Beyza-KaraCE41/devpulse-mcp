@@ -23,6 +23,13 @@ KATEGORILER: dict[str, set[str]] = {
         "diffusion",
         "mcp",
         "inference",
+        "neural",
+        "coreml",
+        "mlx",
+        "agi",
+        "claude",
+        "codex",
+        "language-model",
     },
     "Mobil": {
         "android",
@@ -110,10 +117,13 @@ def _metinde_geciyor_mu(kelime: str, metin: str) -> bool:
     return re.search(kalip, metin) is not None
 
 
-def kategorile(konular: list[str], aciklama: str) -> list[str]:
-    """Bir repo'nun ait olduğu kategorileri döndürür. Hiçbirine uymazsa ["Diğer"]."""
+def kategorile(konular: list[str], aciklama: str, ad: str = "") -> list[str]:
+    """Bir repo'nun ait olduğu kategorileri döndürür. Hiçbirine uymazsa ["Diğer"].
+    Açıklamanın yanında repo adına da bakılır: "mini-AGI" -> "mini agi".
+    """
     etiketler = {k.lower() for k in konular}
-    metin = aciklama.lower()
+    ad_kelimeleri = re.sub(r"[/_-]", " ", ad)
+    metin = f"{aciklama} {ad_kelimeleri}".lower()
 
     bulunanlar = []
     for kategori, kelimeler in KATEGORILER.items():

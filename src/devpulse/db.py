@@ -75,7 +75,10 @@ def fotograf_kaydet(baglanti: sqlite3.Connection, repolar: list[dict], tarih: st
             baglanti.execute("DELETE FROM kategoriler WHERE repo_ad = ?", (repo["ad"],))
             baglanti.executemany(
                 "INSERT INTO kategoriler (repo_ad, kategori) VALUES (?, ?)",
-                [(repo["ad"], k) for k in kategorile(repo["konular"], repo["aciklama"])],
+                [
+                    (repo["ad"], k)
+                    for k in kategorile(repo["konular"], repo["aciklama"], repo["ad"])
+                ],
             )
             baglanti.execute(
                 """
