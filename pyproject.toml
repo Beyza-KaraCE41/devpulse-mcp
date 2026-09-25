@@ -16,6 +16,7 @@ dependencies = [
 
 [project.scripts]
 devpulse-mcp = "devpulse.server:main"
+devpulse-topla = "devpulse.toplayici:main"
 
 [project.optional-dependencies]
 dev = [
