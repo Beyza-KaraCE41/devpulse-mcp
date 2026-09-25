@@ -135,6 +135,74 @@ def kategori_ozeti() -> str:
     return "\n".join(cikti)
 
 
+@mcp.tool()
+def hizla_yukselenler(gun: int = 1, adet: int = 10, kategori: str | None = None) -> str:
+    """Belirli bir sürede en çok yıldız kazanan repoları listeler (gerçek trend).
+
+    En son fotoğraf ile `gun` gün önceki fotoğraf karşılaştırılır. Sadece iki tarihte de
+    kaydı olan repolar hesaba katılır.
+
+    Args:
+        gun: Kaç gün öncesiyle karşılaştırılacağı (1-30, varsayılan 1 yani dünden bugüne).
+        adet: Kaç repo listeleneceği (1-50, varsayılan 10).
+        kategori: İsteğe bağlı kategori filtresi (populer_repolar ile aynı değerler).
+    """
+    gun = max(1, min(gun, 30))
+    adet = max(1, min(adet, 50))
+
+    kategori_adi = None
+    if kategori:
+        kategori_adi = _kategori_bul(kategori)
+        if kategori_adi is None:
+            return f"'{kategori}' diye bir kategori yok. Geçerli: {', '.join(TUM_KATEGORILER)}"
+
+    with closing(baglan()) as baglanti:
+        son_tarih = _son_tarih(baglanti)
+        if son_tarih is None:
+            return "Veritabanında henüz veri yok. Önce veri toplanması gerekiyor."
+
+        onceki_tarih = baglanti.execute(
+            "SELECT MAX(tarih) FROM fotograflar WHERE tarih <= date(?, ?)",
+            (son_tarih, f"-{gun} days"),
+        ).fetchone()[0]
+        if onceki_tarih is None:
+            return (
+                f"Trend için yeterli geçmiş yok. En son veri {son_tarih}, "
+                f"ama {gun} gün öncesine ait kayıt bulunmuyor. Veri her gün toplandıkça "
+                "karşılaştırma mümkün olacak."
+            )
+
+        sorgu = """
+            SELECT r.ad, r.aciklama, r.url, bugun.yildiz,
+                   bugun.yildiz - once.yildiz AS artis, once.yildiz AS eski_yildiz
+            FROM fotograflar AS bugun
+            JOIN fotograflar AS once ON once.repo_ad = bugun.repo_ad AND once.tarih = ?
+            JOIN repolar AS r ON r.ad = bugun.repo_ad
+            WHERE bugun.tarih = ?
+        """
+        degerler: list = [onceki_tarih, son_tarih]
+        if kategori_adi:
+            sorgu += " AND r.ad IN (SELECT repo_ad FROM kategoriler WHERE kategori = ?)"
+            degerler.append(kategori_adi)
+        sorgu += " ORDER BY artis DESC LIMIT ?"
+        degerler.append(adet)
+
+        satirlar = baglanti.execute(sorgu, degerler).fetchall()
+
+    if not satirlar:
+        return f"{onceki_tarih} ile {son_tarih} arasında karşılaştırılabilir repo bulunamadı."
+
+    cikti = [f"{onceki_tarih} → {son_tarih} arasında en çok yıldız kazanan {len(satirlar)} repo:"]
+    for sira, s in enumerate(satirlar, start=1):
+        yuzde = 100 * s["artis"] / s["eski_yildiz"] if s["eski_yildiz"] else 0
+        cikti.append(
+            f"{sira}. {s['ad']}: +{s['artis']} yıldız (%{yuzde:.1f} artış, şu an {s['yildiz']})\n"
+            f"   {s['aciklama'] or 'Açıklama yok'}\n"
+            f"   {s['url']}"
+        )
+    return "\n".join(cikti)
+
+
 def main() -> None:
     """Sunucuyu başlatır."""
     # Loglar stderr'e yazılır. stdout, Claude ile MCP konuşmasına ayrılmıştır.
