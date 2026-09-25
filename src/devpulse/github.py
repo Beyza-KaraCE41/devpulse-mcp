@@ -77,6 +77,7 @@ def _repo_ozeti(repo: dict) -> dict:
         "ad": repo["full_name"],
         "aciklama": repo.get("description") or "",
         "yildiz": repo["stargazers_count"],
+        "fork": repo["stargazers_count"],
         "dil": repo.get("language") or "Bilinmiyor",
         "konular": repo.get("topics", []),
         "url": repo["html_url"],

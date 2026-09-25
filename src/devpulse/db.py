@@ -1,5 +1,6 @@
 """SQLite veritabanı katmanı: tabloları oluşturur ve bağlantı verir."""
 
+import json
 import sqlite3
 
 from devpulse.config import veritabani_yolu
@@ -40,3 +41,43 @@ def baglan() -> sqlite3.Connection:
     baglanti.execute("PRAGMA foreign_keys= ON")
     baglanti.executescript(SEMA)
     return baglanti
+
+
+def fotograf_kaydet(baglanti: sqlite3.Connection, repolar: list[dict], tarih: str) -> int:
+    """Repoların o günkü yıldız ve fork sayılarını kaydeder.
+    Aynı gün tekrar çalıştırılırsa yeni satır eklemez, o günün kaydını günceller.
+    Kydedilen repo sayısını döndürür.
+    """
+
+    with baglanti:
+        for repo in repolar:
+            baglanti.execute(
+                """
+                INSERT INTO repolar (ad, aciklama, dil, konular, url, ilk_gorulme)
+                VALUES (?, ?, ?, ?, ?, ?)
+                ON CONFLICT (ad) DO UPDATE SET
+                    aciklama = excluded.aciklama,
+                    dil= excluded.dil,
+                    konular= excluded.konular,
+                    url= excluded.url
+                """,
+                (
+                    repo["ad"],
+                    repo["aciklama"],
+                    repo["dil"],
+                    json.dumps(repo["konular"]),
+                    repo["url"],
+                    tarih,
+                ),
+            )
+            baglanti.execute(
+                """
+                INSERT INTO fotograflar (repo_ad, tarih, yildiz, fork)
+                VALUES (?, ?, ?, ?)
+                ON CONFLICT (repo_ad, tarih) DO UPDATE SET
+                    yildiz= excluded.yildiz,
+                    fork= excluded.fork
+                """,
+                (repo["ad"], tarih, repo["yildiz"], repo["fork"]),
+            )
+    return len(repolar)
