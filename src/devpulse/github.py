@@ -44,7 +44,13 @@ def _get(yol: str, params: dict | None = None) -> httpx.Response:
     """GitHub'a GET isteği atar. Geçici hatalarda tekrar dener, limit dolunca durur."""
     for deneme in range(1, DENEME_SAYISI + 1):
         try:
-            yanit = httpx.get(f"{API_URL}{yol}", headers=_basliklar(), params=params, timeout=10)
+            yanit = httpx.get(
+                f"{API_URL}{yol}",
+                headers=_basliklar(),
+                params=params,
+                timeout=10,
+                follow_redirects=True,
+            )
         except httpx.TransportError as hata:
             # İnternet kesildi, zaman aşımı vb. Geçici olabilir, tekrar dene.
             log.warning("Ağ hatası: %s (deneme %d/%d)", hata, deneme, DENEME_SAYISI)
@@ -97,3 +103,8 @@ def yeni_populer_repolar(gun: int = 7, dil: str | None = None, adet: int = 10) -
     params = {"q": sorgu, "sort": "stars", "order": "desc", "per_page": adet}
     yanit = _get("/search/repositories", params=params)
     return [_repo_ozeti(repo) for repo in yanit.json()["items"]]
+
+
+def repo_getir(ad: str) -> dict:
+    """Tek bir repo'nun güncel bilgilerini döndürür. `ad` "sahip/repo" biçimindedir."""
+    return _repo_ozeti(_get(f"/repos/{ad}").json())

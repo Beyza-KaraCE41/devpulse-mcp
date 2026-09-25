@@ -91,3 +91,12 @@ def fotograf_kaydet(baglanti: sqlite3.Connection, repolar: list[dict], tarih: st
                 (repo["ad"], tarih, repo["yildiz"], repo["fork"]),
             )
     return len(repolar)
+
+
+def takip_edilen_repolar(baglanti: sqlite3.Connection, bugun: str, gun: int) -> list[str]:
+    """İlk kez son `gun` gün içinde görülmüş repoların adlarını döndürür."""
+    satirlar = baglanti.execute(
+        "SELECT ad FROM repolar WHERE ilk_gorulme >= date(?, ?)",
+        (bugun, f"-{gun} days"),
+    ).fetchall()
+    return [s["ad"] for s in satirlar]
