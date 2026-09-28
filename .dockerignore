@@ -1,0 +1,19 @@
+# Docker imajına GİRMEYECEK dosyalar (build context'ten çıkarılır)
+
+# Gizli bilgiler: token imaja gömülmez, çalışırken dışarıdan verilir
+.env
+
+# Windows'a özel sanal ortam: Linux container'da işe yaramaz
+.venv/
+
+# Veri imajın parçası değil, ayrıca bağlanır (volume)
+data/
+*.db
+
+# Git geçmişi, önbellekler ve testler: çalışan uygulamaya gerekmez
+.git/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+tests/
