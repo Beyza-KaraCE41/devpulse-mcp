@@ -34,11 +34,17 @@ def _son_tarih(baglanti: sqlite3.Connection) -> str | None:
     return baglanti.execute("SELECT MAX(tarih) FROM fotograflar").fetchone()[0]
 
 
+# ---------------------------------------------------------------------------
+# Tools: Claude'un kendi karar verip çağırdığı araçlar
+# ---------------------------------------------------------------------------
+
+
 @mcp.tool()
 def populer_repolar(adet: int = 10, dil: str | None = None, kategori: str | None = None) -> str:
     """Son toplanan veriye göre en çok yıldızı olan yeni GitHub repolarını listeler.
 
-    Veri, son 7 gün içinde oluşturulmuş repolardan günde bir kez toplanır.
+    Veri günde bir kez toplanır: son 7 günde oluşturulmuş popüler repolar eklenir ve her
+    repo ilk görüldükten sonra 14 gün boyunca takip edilir.
 
     Args:
         adet: Kaç repo listeleneceği (1-50, varsayılan 10).
@@ -95,8 +101,9 @@ def populer_repolar(adet: int = 10, dil: str | None = None, kategori: str | None
 
 @mcp.tool()
 def kategori_ozeti() -> str:
-    """Son toplanan veride her kategoride kaç yeni popüler repo olduğunu ve öne çıkanları özetler.
+    """Son toplanan veride her kategoride kaç popüler repo olduğunu ve öne çıkanları özetler.
 
+    Kapsam: son ~2 haftada ortaya çıkıp takip edilen repolar.
     Hangi teknoloji alanlarında hareket olduğunu görmek için kullanılır.
     Bir repo birden fazla kategoride olabilir.
     """
@@ -116,7 +123,7 @@ def kategori_ozeti() -> str:
             (son_tarih,),
         ).fetchall()
 
-        cikti = [f"Veri tarihi: {son_tarih} (UTC). Kategorilere göre yeni popüler repolar:"]
+        cikti = [f"Veri tarihi: {son_tarih} (UTC). Kategorilere göre popüler repolar:"]
         for s in satirlar:
             one_cikanlar = baglanti.execute(
                 """
@@ -201,6 +208,81 @@ def hizla_yukselenler(gun: int = 1, adet: int = 10, kategori: str | None = None)
             f"   {s['url']}"
         )
     return "\n".join(cikti)
+
+
+# ---------------------------------------------------------------------------
+# Resources: Claude'un okuyabileceği belgeler
+# ---------------------------------------------------------------------------
+
+
+@mcp.resource("devpulse://durum", name="Veri durumu", mime_type="text/markdown")
+def veri_durumu() -> str:
+    """Veritabanında hangi günlerin verisi olduğunu ve kaç repo takip edildiğini gösterir."""
+    with closing(baglan()) as baglanti:
+        repo_sayisi = baglanti.execute("SELECT COUNT(*) FROM repolar").fetchone()[0]
+        gunler = baglanti.execute(
+            "SELECT tarih, COUNT(*) AS adet FROM fotograflar GROUP BY tarih ORDER BY tarih DESC"
+        ).fetchall()
+
+    satirlar = ["# DevPulse veri durumu", "", f"Takip edilen toplam repo: {repo_sayisi}", ""]
+    satirlar.append("| Tarih (UTC) | Fotoğraflanan repo |")
+    satirlar.append("|---|---|")
+    satirlar += [f"| {g['tarih']} | {g['adet']} |" for g in gunler]
+    return "\n".join(satirlar)
+
+
+@mcp.resource("devpulse://kategoriler", name="Kategori kuralları", mime_type="text/markdown")
+def kategori_kurallari() -> str:
+    """Repoların hangi anahtar kelimelere göre hangi kategoriye konduğunu açıklar."""
+    satirlar = [
+        "# DevPulse kategori kuralları",
+        "",
+        "Bir repo, GitHub etiketlerinde ya da açıklamasında/adında aşağıdaki kelimelerden",
+        "biri ayrı bir kelime olarak geçiyorsa o kategoriye girer. Birden fazla kategoride",
+        "olabilir. Hiçbirine uymazsa 'Diğer' olur.",
+        "",
+        "Bilinen sınırlama: Kurallar olumsuz cümleleri anlamaz ('API gerektirmez' yine",
+        "API/Backend sayılır). Şüpheli sınıflandırmaları açıklamayı okuyarak yorumla.",
+        "",
+    ]
+    for kategori, kelimeler in KATEGORILER.items():
+        satirlar.append(f"- **{kategori}**: {', '.join(sorted(kelimeler))}")
+    return "\n".join(satirlar)
+
+
+# ---------------------------------------------------------------------------
+# Prompts: hazır görev şablonları
+# ---------------------------------------------------------------------------
+
+
+@mcp.prompt(title="Sabah bülteni")
+def sabah_bulteni(odak: str = "") -> str:
+    """DevPulse verisiyle günlük teknoloji bülteni hazırlatır.
+
+    Args:
+        odak: İsteğe bağlı olarak öne çıkarılacak kategori, örneğin "Yapay Zekâ" veya "Mobil".
+    """
+    odak_cumlesi = (
+        f"Özellikle '{odak}' kategorisine odaklan, diğerlerini kısaca geç." if odak else ""
+    )
+    return f"""DevPulse araçlarını kullanarak bana bugünün yazılım dünyası bültenini hazırla.
+
+1. `kategori_ozeti` ile hangi alanlarda hareket olduğuna bak.
+2. `hizla_yukselenler` aracını varsayılan ayarlarıyla (gun=1) çağırıp en son iki veri günü
+   arasında en çok yıldız kazananları bul.
+3. `populer_repolar` ile bu haftanın en popüler yeni projelerini kontrol et.
+{odak_cumlesi}
+
+Bülteni Türkçe yaz ve şu bölümlerden oluştur:
+- **Günün özeti**: 2-3 cümle, genel tablo.
+- **Öne çıkan 5 proje**: Her biri için ne yaptığını ve neden önemli olduğunu tek cümleyle
+  anlat.
+- **Dikkat edilmesi gerekenler**: Yıldızı çok ama fork'u çok az olan ya da açıklaması
+  şüpheli repolar varsa uyar. Tanımadığım repoları indirmeden önce kontrol etmemi
+  hatırlat.
+- **Bir bilgisayar mühendisi olarak bu hafta neye bakmalıyım?**: 2-3 somut öneri.
+
+Veri tarihini bültenin başında belirt."""
 
 
 def main() -> None:
