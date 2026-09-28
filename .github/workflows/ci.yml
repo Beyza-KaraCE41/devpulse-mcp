@@ -1,0 +1,42 @@
+# Her PR'da ve main'e her push'ta: testler, kod stili ve Docker imajı kontrol edilir.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    name: Testler ve kod stili
+    runs-on: ubuntu-latest
+    steps:
+      - name: Kodu indir
+        uses: actions/checkout@v5
+
+      - name: Python 3.13 kur
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Projeyi ve geliştirme araçlarını kur
+        run: pip install -e ".[dev]"
+
+      - name: Ruff (hata kontrolü)
+        run: ruff check .
+
+      - name: Ruff (biçim kontrolü)
+        run: ruff format --check .
+
+      - name: Pytest
+        run: pytest -v
+
+  docker:
+    name: Docker imajı derleniyor mu
+    runs-on: ubuntu-latest
+    steps:
+      - name: Kodu indir
+        uses: actions/checkout@v5
+
+      - name: İmajı derle
+        run: docker build -t devpulse-mcp .
