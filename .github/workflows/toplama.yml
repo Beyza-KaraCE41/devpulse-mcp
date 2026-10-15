@@ -1,0 +1,51 @@
+# Her gece GitHub'dan veri toplar ve veritabanını "data" dalına kaydeder.
+name: Günlük veri toplama
+
+on:
+  schedule:
+    - cron: "17 1 * * *"   # Her gün 01:17 UTC = İstanbul 04:17
+  workflow_dispatch:         # Actions sekmesinden elle "Run workflow" butonu
+
+permissions:
+  contents: write            # data dalına push edebilmek için
+
+concurrency:
+  group: veri-toplama        # Aynı anda iki toplama çalışmasın
+  cancel-in-progress: false
+
+jobs:
+  topla:
+    name: Topla ve kaydet
+    runs-on: ubuntu-latest
+    steps:
+      - name: Kodu indir (main)
+        uses: actions/checkout@v5
+
+      - name: Veritabanını indir (data dalı)
+        uses: actions/checkout@v5
+        with:
+          ref: data
+          path: veri
+
+      - name: Python 3.13 kur
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Projeyi kur
+        run: pip install .
+
+      - name: Toplayıcıyı çalıştır
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEVPULSE_DB: veri/devpulse.db
+        run: devpulse-topla
+
+      - name: Veritabanını data dalına kaydet
+        working-directory: veri
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add devpulse.db
+          git commit -m "data: $(date -u +%F) günlük fotoğraf" || echo "Değişiklik yok"
+          git push
