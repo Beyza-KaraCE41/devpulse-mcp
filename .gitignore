@@ -15,3 +15,8 @@ __pycache__/
 # Editör ve işletim sistemi dosyaları
 .vscode/
 Thumbs.db
+
+# Bülten önizlemesi
+bulten.html
+
+site/
