@@ -1,22 +1,27 @@
-# Her gece GitHub'dan veri toplar ve veritabanını "data" dalına kaydeder.
+# Her gece: GitHub'dan veri topla, data dalına kaydet, panoyu yayınla, bülteni gönder.
 name: Günlük veri toplama
 
 on:
   schedule:
     - cron: "17 1 * * *"   # Her gün 01:17 UTC = İstanbul 04:17
-  workflow_dispatch:         # Actions sekmesinden elle "Run workflow" butonu
+  workflow_dispatch:         # Actions sekmesinden elle "Run workflow"
 
 permissions:
-  contents: write            # data dalına push edebilmek için
+  contents: read             # Varsayılan: sadece okuma. İhtiyacı olan iş fazlasını ister.
 
 concurrency:
-  group: veri-toplama        # Aynı anda iki toplama çalışmasın
+  group: veri-toplama
   cancel-in-progress: false
+
+env:
+  PANO_URL: https://beyza-karace41.github.io/devpulse-mcp/
 
 jobs:
   topla:
-    name: Topla ve kaydet
+    name: Topla, kaydet, panoyu hazırla
     runs-on: ubuntu-latest
+    permissions:
+      contents: write        # data dalına push için
     steps:
       - name: Kodu indir (main)
         uses: actions/checkout@v5
@@ -49,3 +54,28 @@ jobs:
           git add devpulse.db
           git commit -m "data: $(date -u +%F) günlük fotoğraf" || echo "Değişiklik yok"
           git push
+
+      - name: Panoyu oluştur
+        env:
+          DEVPULSE_DB: veri/devpulse.db
+        run: devpulse-pano --cikti site
+
+      - name: Panoyu Pages için paketle
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: site
+
+  yayinla:
+    name: Panoyu yayınla
+    needs: topla             # topla bitmeden başlamaz
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write           # Pages'e yayın yapabilmek için
+      id-token: write        # GitHub'a "bu yayını gerçekten bu workflow yapıyor" kanıtı
+    environment:
+      name: github-pages
+      url: ${{ steps.dagitim.outputs.page_url }}
+    steps:
+      - name: GitHub Pages'e dağıt
+        id: dagitim
+        uses: actions/deploy-pages@v4
