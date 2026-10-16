@@ -187,15 +187,18 @@ def metin_olustur(veri: dict, pano_url: str | None = None) -> str:
 # E-posta programları modern CSS'i desteklemez: düzen tablolarla,
 # stiller her etiketin içinde (inline) yazılır. Harici dosya, script, font yoktur.
 
-ARKA = "#f3f4f6"
-KART = "#ffffff"
-CERCEVE = "#e5e7eb"
-AYRAC = "#f0f1f3"
-METIN = "#111827"
-SOLUK = "#6b7280"
-VURGU = "#1d4ed8"
-ARTIS = "#047857"
-UYARI = "#b45309"
+# Koyu tema (web panosuyla aynı renkler)
+ARKA = "#0d0d0d"  # sayfa zemini
+KART = "#1a1a19"  # kart zemini
+CERCEVE = "#2c2c2a"  # kart çerçevesi
+AYRAC = "#262624"  # kart içindeki satır çizgileri
+METIN = "#f0efec"  # ana yazı
+SOLUK = "#a3a29b"  # ikincil yazı
+VURGU = "#3987e5"  # çubuklar
+BAGLANTI = "#6da7ec"  # repo adları (koyu zeminde okunaklı açık mavi)
+BUTON = "#2a78d6"  # buton zemini
+ARTIS = "#0ca30c"  # yıldız artışı
+UYARI = "#fab219"  # şüpheli repolar
 YAZI_TIPI = "-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
 
 
@@ -206,7 +209,7 @@ def _repo_satiri(ad: str, alt: str, sag_ust: str, sag_alt: str = "", renk: str =
 <tr><td style="padding:12px 20px;border-top:1px solid {AYRAC};">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
     <td style="vertical-align:top;">
-      <a href="https://github.com/{ad_e}" style="color:{VURGU};text-decoration:none;font-weight:600;font-size:15px;">{ad_e}</a>
+      <a href="https://github.com/{ad_e}" style="color:{BAGLANTI};text-decoration:none;font-weight:600;font-size:15px;">{ad_e}</a>
       <div style="color:{SOLUK};font-size:13px;line-height:1.45;margin-top:2px;">{escape(alt)}</div>
     </td>
     <td style="vertical-align:top;text-align:right;white-space:nowrap;padding-left:16px;">
@@ -223,7 +226,7 @@ def _bos_satir(metin: str) -> str:
 
 
 def _bolum(baslik: str, alt_baslik: str, govde: str) -> str:
-    """Başlıklı beyaz bir kart."""
+    """Başlıklı bir kart."""
     alt = (
         f'<div style="color:{SOLUK};font-size:13px;margin-top:4px;">{escape(alt_baslik)}</div>'
         if alt_baslik
@@ -274,8 +277,9 @@ def _pano_butonu(pano_url: str | None) -> str:
         return ""
     return f"""
 <tr><td align="center" style="padding-top:24px;">
-  <a href="{escape(pano_url)}" style="display:inline-block;background:{VURGU};color:#ffffff;text-decoration:none;font-weight:600;font-size:15px;padding:12px 24px;border-radius:8px;">Etkileşimli panoyu aç</a>
+  <a href="{escape(pano_url)}" style="display:inline-block;background:{BUTON};color:#ffffff;text-decoration:none;font-weight:600;font-size:15px;padding:12px 24px;border-radius:8px;">Etkileşimli panoyu aç</a>
   <div style="color:{SOLUK};font-size:12px;margin-top:8px;">Grafikler, 30 günlük yıldız geçmişi ve kategori filtresi</div>
+  <div style="font-size:12px;margin-top:4px;"><a href="{escape(pano_url)}" style="color:{BAGLANTI};text-decoration:none;">{escape(pano_url)}</a></div>
 </td></tr>"""
 
 
@@ -333,16 +337,18 @@ def html_olustur(veri: dict, pano_url: str | None = None) -> str:
 <html lang="tr">
 <head>
 <meta charset="utf-8">
+<meta name="color-scheme" content="dark">
+<meta name="supported-color-schemes" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>DevPulse · {escape(tarih)}</title>
 </head>
-<body style="margin:0;padding:0;background:{ARKA};">
+<body style="margin:0;padding:0;background:{ARKA};" bgcolor="{ARKA}">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:{ARKA};">
 <tr><td align="center" style="padding:24px 12px;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;font-family:{YAZI_TIPI};color:{METIN};">
 
   <tr><td style="padding:0 4px 8px;">
-    <div style="font-size:13px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:{VURGU};">DevPulse</div>
+    <div style="font-size:13px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:{BAGLANTI};">DevPulse</div>
     <div style="font-size:24px;font-weight:600;margin-top:4px;">Günlük bülten</div>
     <div style="font-size:14px;color:{SOLUK};margin-top:2px;">{escape(tarih)}</div>
   </td></tr>

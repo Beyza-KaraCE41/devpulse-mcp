@@ -65,6 +65,14 @@ jobs:
         with:
           path: site
 
+      - name: Bülteni e-postayla gönder
+        env:
+          DEVPULSE_DB: veri/devpulse.db
+          DEVPULSE_SMTP_KULLANICI: ${{ secrets.DEVPULSE_SMTP_KULLANICI }}
+          DEVPULSE_SMTP_SIFRE: ${{ secrets.DEVPULSE_SMTP_SIFRE }}
+          DEVPULSE_PANO_URL: ${{ env.PANO_URL }}
+        run: devpulse-rapor --gonder
+
   yayinla:
     name: Panoyu yayınla
     needs: topla             # topla bitmeden başlamaz
